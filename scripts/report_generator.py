@@ -3,7 +3,7 @@
 import json
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from analyzer import analyze_watchlist
 from gem_scanner import scan_gems
@@ -54,7 +54,8 @@ def format_change(change_pct):
 
 
 def generate_html(watchlist_path):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    kst = timezone(timedelta(hours=9))
+    now = datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
     # 관심종목 분석
     print("=== Watchlist Analysis ===", file=sys.stderr)
