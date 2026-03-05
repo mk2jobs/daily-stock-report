@@ -1,0 +1,20 @@
+# Claude 프로젝트 문서 (로컬 전용)
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache
+data/cache/
+
+# 로컬 테스트 결과
+*.html
+!README.md
