@@ -7,6 +7,8 @@ from datetime import datetime, timezone, timedelta
 
 from analyzer import analyze_watchlist
 from gem_scanner import scan_gems
+from market_overview import get_market_indices, get_exchange_rates, get_vix, get_sector_performance
+from extras import check_52week_alerts, get_weekly_performance, get_earnings_calendar
 
 
 SIGNAL_KR = {
@@ -57,14 +59,27 @@ def generate_html(watchlist_path):
     kst = timezone(timedelta(hours=9))
     now = datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
-    # 관심종목 분석
+    # 1. 시장 요약
+    print("=== Market Overview ===", file=sys.stderr)
+    indices = get_market_indices()
+    fx_rates = get_exchange_rates()
+    vix = get_vix()
+    sectors = get_sector_performance()
+
+    # 2. 관심종목 분석
     print("=== Watchlist Analysis ===", file=sys.stderr)
     results = analyze_watchlist(watchlist_path)
 
     krx_stocks = [r for r in results if r['market'] == 'KRX']
     us_stocks = [r for r in results if r['market'] == 'US']
 
-    # 숨겨진 종목 스캔
+    # 3. 추가 분석
+    print("=== Extras ===", file=sys.stderr)
+    alerts_52w = check_52week_alerts(results)
+    weekly = get_weekly_performance(results)
+    earnings = get_earnings_calendar(results)
+
+    # 4. 숨겨진 종목 스캔
     print("=== Gem Scanner ===", file=sys.stderr)
     gems = scan_gems(top_n=10)
 
@@ -78,6 +93,7 @@ def generate_html(watchlist_path):
   .container {{ max-width: 800px; margin: 0 auto; }}
   h1 {{ color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 10px; }}
   h2 {{ color: #16213e; margin-top: 30px; }}
+  h3 {{ color: #333; margin-top: 20px; font-size: 15px; }}
   table {{ width: 100%; border-collapse: collapse; margin: 15px 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
   th {{ background: #16213e; color: white; padding: 12px 10px; text-align: left; font-size: 13px; }}
   td {{ padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }}
@@ -86,8 +102,19 @@ def generate_html(watchlist_path):
   .gem-card {{ background: white; padding: 12px 16px; margin: 8px 0; border-radius: 8px; border-left: 4px solid #FF9800; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
   .gem-name {{ font-weight: bold; font-size: 15px; }}
   .gem-reason {{ color: #e65100; font-size: 13px; margin-top: 4px; }}
+  .alert-card {{ background: white; padding: 12px 16px; margin: 8px 0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+  .alert-high {{ border-left: 4px solid #F44336; }}
+  .alert-low {{ border-left: 4px solid #2196F3; }}
+  .overview-grid {{ display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }}
+  .overview-card {{ background: white; padding: 14px 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; min-width: 140px; }}
+  .overview-label {{ font-size: 12px; color: #999; }}
+  .overview-value {{ font-size: 18px; font-weight: bold; margin-top: 4px; }}
+  .overview-change {{ font-size: 13px; margin-top: 2px; }}
+  .vix-badge {{ display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; }}
+  .sector-bar {{ height: 8px; border-radius: 4px; margin-top: 4px; }}
   .footer {{ margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #999; font-size: 12px; }}
   .section-note {{ color: #666; font-size: 13px; margin-bottom: 10px; }}
+  .earnings-item {{ background: white; padding: 10px 16px; margin: 6px 0; border-radius: 8px; border-left: 4px solid #9C27B0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
 </style>
 </head>
 <body>
@@ -96,15 +123,91 @@ def generate_html(watchlist_path):
 <p style="color:#666">{now} KST</p>
 """
 
-    # 한국 주식 테이블
+    # === 시장 요약 ===
+    html += '<h2>시장 요약</h2>'
+    html += '<div class="overview-grid">'
+
+    for idx in indices:
+        html += f"""<div class="overview-card">
+  <div class="overview-label">{idx['name']}</div>
+  <div class="overview-value">{idx['value']:,.2f}</div>
+  <div class="overview-change">{format_change(idx['change_pct'])}</div>
+</div>"""
+
+    html += '</div>'
+
+    # 환율 + VIX
+    html += '<div class="overview-grid">'
+
+    for r in fx_rates:
+        html += f"""<div class="overview-card">
+  <div class="overview-label">{r['name']}</div>
+  <div class="overview-value">₩{r['value']:,.2f}</div>
+  <div class="overview-change">{format_change(r['change_pct'])}</div>
+</div>"""
+
+    if vix:
+        vix_color = "#F44336" if vix['value'] >= 25 else "#FF9800" if vix['value'] >= 18 else "#4CAF50"
+        html += f"""<div class="overview-card">
+  <div class="overview-label">VIX (공포지수)</div>
+  <div class="overview-value">{vix['value']:.2f} <span class="vix-badge" style="background:{vix_color}">{vix['level']}</span></div>
+  <div class="overview-change">{format_change(vix['change_pct'])}</div>
+</div>"""
+
+    html += '</div>'
+
+    # === 섹터 흐름 ===
+    if sectors:
+        html += '<h3>섹터 흐름 (미국 ETF 기준)</h3>'
+        html += '<table><tr><th>섹터</th><th>등락률</th><th></th></tr>'
+        for s in sectors:
+            bar_color = "#4CAF50" if s['change_pct'] >= 0 else "#F44336"
+            bar_width = min(abs(s['change_pct']) * 20, 100)
+            html += f"""<tr>
+  <td><strong>{s['name']}</strong></td>
+  <td>{format_change(s['change_pct'])}</td>
+  <td><div class="sector-bar" style="background:{bar_color};width:{bar_width}%"></div></td>
+</tr>"""
+        html += '</table>'
+
+    # === 52주 신고가/신저가 알림 ===
+    if alerts_52w:
+        html += '<h2>52주 신고가/신저가 알림</h2>'
+        html += '<p class="section-note">관심종목 중 52주 최고/최저 가격 근접 종목</p>'
+        for a in alerts_52w:
+            css_class = "alert-high" if a['is_high'] else "alert-low"
+            icon = "📈" if a['is_high'] else "📉"
+            html += f"""<div class="alert-card {css_class}">
+  <strong>{icon} {a['name']}</strong> <span style="color:#999">({a['ticker']})</span>
+  — {format_price(a['price'], a['currency'])}
+  <br><span style="font-size:12px;color:#666">{a['alert_type']} | 52주 고가: {format_price(a['high_52w'], a['currency'])} / 저가: {format_price(a['low_52w'], a['currency'])}</span>
+</div>"""
+
+    # === 실적 발표 캘린더 ===
+    if earnings:
+        html += '<h2>이번 주 실적 발표</h2>'
+        for e in earnings:
+            html += f"""<div class="earnings-item">
+  <strong>{e['name']}</strong> <span style="color:#999">({e['ticker']})</span>
+  — {e['date']}
+</div>"""
+
+    # === 주간 성과 (월요일만) ===
+    if weekly:
+        html += '<h2>지난주 성과 요약</h2>'
+        html += '<table><tr><th>종목</th><th>주간 등락률</th></tr>'
+        for w in weekly:
+            html += f'<tr><td><strong>{w["name"]}</strong></td><td>{format_change(w["week_change_pct"])}</td></tr>'
+        html += '</table>'
+
+    # === 관심종목 분석 ===
     if krx_stocks:
         html += _build_stock_table("한국 주식 (KRX)", krx_stocks)
 
-    # 미국 주식 테이블
     if us_stocks:
         html += _build_stock_table("미국 주식 (US)", us_stocks)
 
-    # 숨겨진 종목 추천
+    # === 숨겨진 종목 추천 ===
     html += '<h2>숨겨진 종목 추천</h2>'
     html += '<p class="section-note">KOSPI/KOSDAQ 중 거래량 급증 또는 RSI 과매도 종목</p>'
 
