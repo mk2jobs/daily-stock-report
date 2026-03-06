@@ -31,6 +31,7 @@
     {"name": "어도비", "ticker": "ADBE", "market": "US"},
     {"name": "엔비디아", "ticker": "NVDA", "market": "US"},
     {"name": "피그마", "ticker": "FIGM", "market": "US"},
-    {"name": "Castor Maritime", "ticker": "CTRM", "market": "US"}
+    {"name": "Castor Maritime", "ticker": "CTRM", "market": "US"},
+    {"name": "두산에너빌리티", "ticker": "034020.KS", "market": "KRX"}
   ]
 }
