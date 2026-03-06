@@ -1,17 +1,22 @@
 {
   "stocks": [
     {"name": "삼성전자", "ticker": "005930.KS", "market": "KRX"},
+    {"name": "삼성전자우", "ticker": "005935.KS", "market": "KRX"},
     {"name": "SBS", "ticker": "034120.KS", "market": "KRX"},
     {"name": "케이뱅크", "ticker": "279570.KS", "market": "KRX"},
     {"name": "크래프톤", "ticker": "259960.KS", "market": "KRX"},
     {"name": "카카오", "ticker": "035720.KS", "market": "KRX"},
     {"name": "네이버", "ticker": "035420.KS", "market": "KRX"},
     {"name": "현대차", "ticker": "005380.KS", "market": "KRX"},
+    {"name": "현대차우", "ticker": "005385.KS", "market": "KRX"},
     {"name": "JYP Ent.", "ticker": "035900.KQ", "market": "KRX"},
     {"name": "SK텔레콤", "ticker": "017670.KS", "market": "KRX"},
     {"name": "SK하이닉스", "ticker": "000660.KS", "market": "KRX"},
     {"name": "와이즈넛", "ticker": "096250.KQ", "market": "KRX"},
     {"name": "넥슨게임즈", "ticker": "225570.KQ", "market": "KRX"},
+    {"name": "네오티스", "ticker": "085910.KQ", "market": "KRX"},
+    {"name": "배럴", "ticker": "267790.KQ", "market": "KRX"},
+    {"name": "삼부토건", "ticker": "001470.KS", "market": "KRX"},
     {"name": "쿠팡", "ticker": "CPNG", "market": "US"},
     {"name": "랄프로렌", "ticker": "RL", "market": "US"},
     {"name": "나이키", "ticker": "NKE", "market": "US"},
@@ -25,6 +30,7 @@
     {"name": "아이온큐", "ticker": "IONQ", "market": "US"},
     {"name": "어도비", "ticker": "ADBE", "market": "US"},
     {"name": "엔비디아", "ticker": "NVDA", "market": "US"},
-    {"name": "피그마", "ticker": "FIGM", "market": "US"}
+    {"name": "피그마", "ticker": "FIGM", "market": "US"},
+    {"name": "Castor Maritime", "ticker": "CTRM", "market": "US"}
   ]
 }
