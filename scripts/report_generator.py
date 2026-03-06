@@ -22,10 +22,16 @@ SIGNAL_KR = {
     "neutral": "중립",
     "overbought": "과매수",
     "oversold": "과매도",
+    "recovering": "회복 중",
     "normal": "정상",
     "uptrend": "상승",
     "downtrend": "하락",
     "sideways": "횡보",
+    "golden_cross": "골든크로스",
+    "dead_cross": "데드크로스",
+    "undervalued": "저평가",
+    "overvalued": "고평가",
+    "none": "-",
 }
 
 REC_COLOR = {
@@ -240,7 +246,8 @@ def _build_stock_table(title, stocks):
     html += """<table>
 <tr>
   <th>종목</th><th>현재가</th><th>등락률</th>
-  <th>RSI</th><th>MACD</th><th>추세</th><th>추천</th>
+  <th>RSI</th><th>MACD</th><th>추세</th><th>단기</th>
+  <th>PER</th><th>PBR</th><th>배당률</th><th>크로스</th><th>장기</th>
 </tr>"""
 
     for s in stocks:
@@ -250,6 +257,16 @@ def _build_stock_table(title, stocks):
         rec_color = REC_COLOR.get(rec, "#999")
         trend_kr = SIGNAL_KR.get(sig['trend'], sig['trend'])
         macd_kr = SIGNAL_KR.get(sig['macd_signal'], sig['macd_signal'])
+
+        lt = s.get('long_term', {})
+        lt_rec = lt.get('recommendation', 'hold')
+        lt_rec_kr = SIGNAL_KR.get(lt_rec, lt_rec)
+        lt_rec_color = REC_COLOR.get(lt_rec, "#999")
+        cross_kr = SIGNAL_KR.get(lt.get('cross', 'none'), '-')
+
+        per_str = f"{s['per']:.1f}" if s.get('per') else '-'
+        pbr_str = f"{s['pbr']:.2f}" if s.get('pbr') else '-'
+        div_str = f"{s['dividend_yield']:.1f}%" if s.get('dividend_yield') else '-'
 
         rsi_color = ""
         if s['rsi_14'] and s['rsi_14'] > 70:
@@ -265,6 +282,11 @@ def _build_stock_table(title, stocks):
   <td>{macd_kr}</td>
   <td>{trend_kr}</td>
   <td><span class="rec" style="background:{rec_color}">{rec_kr}</span></td>
+  <td>{per_str}</td>
+  <td>{pbr_str}</td>
+  <td>{div_str}</td>
+  <td>{cross_kr}</td>
+  <td><span class="rec" style="background:{lt_rec_color}">{lt_rec_kr}</span></td>
 </tr>"""
 
     html += "</table>"

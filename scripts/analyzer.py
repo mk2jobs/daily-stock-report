@@ -46,6 +46,8 @@ def get_signals(last_row):
             signals['rsi_signal'] = 'overbought'
         elif rsi < 30:
             signals['rsi_signal'] = 'oversold'
+        elif rsi < 50:
+            signals['rsi_signal'] = 'recovering'
 
     macd = last_row.get('MACD')
     signal = last_row.get('MACD_Signal')
@@ -73,6 +75,8 @@ def get_signals(last_row):
     score = 0
     if signals['rsi_signal'] == 'oversold':
         score += 2
+    elif signals['rsi_signal'] == 'recovering':
+        score += 1
     elif signals['rsi_signal'] == 'overbought':
         score -= 2
     if signals['macd_signal'] == 'bullish':
@@ -88,14 +92,81 @@ def get_signals(last_row):
     elif signals['trend'] == 'downtrend':
         score -= 1
 
+    # 매도 신호는 bearish 지표가 2개 이상일 때만 발동
+    bearish_count = sum([
+        signals['rsi_signal'] == 'overbought',
+        signals['macd_signal'] == 'bearish',
+        signals['bb_signal'] == 'overbought',
+        signals['trend'] == 'downtrend',
+    ])
+
     if score >= 3:
         signals['recommendation'] = "strong_buy"
     elif score >= 1:
         signals['recommendation'] = "buy"
-    elif score <= -3:
+    elif score <= -3 and bearish_count >= 2:
         signals['recommendation'] = "strong_sell"
-    elif score <= -1:
+    elif score <= -1 and bearish_count >= 2:
         signals['recommendation'] = "sell"
+
+    return signals
+
+
+def get_long_term_signals(last_row, per, pbr, dividend_yield):
+    """장기 투자 관점 신호 (밸류에이션 + 골든/데드크로스)."""
+    signals = {
+        "cross": "none",
+        "valuation": "neutral",
+        "recommendation": "hold",
+    }
+
+    sma_50 = last_row.get('SMA_50')
+    sma_200 = last_row.get('SMA_200')
+    if pd.notnull(sma_50) and pd.notnull(sma_200):
+        if sma_50 > sma_200:
+            signals['cross'] = 'golden_cross'
+        else:
+            signals['cross'] = 'dead_cross'
+
+    score = 0
+
+    # 골든/데드크로스
+    if signals['cross'] == 'golden_cross':
+        score += 2
+    elif signals['cross'] == 'dead_cross':
+        score -= 2
+
+    # PER 밸류에이션
+    if per is not None:
+        if per < 10:
+            signals['valuation'] = 'undervalued'
+            score += 1
+        elif per > 30:
+            signals['valuation'] = 'overvalued'
+            score -= 1
+
+    # PBR
+    if pbr is not None:
+        if pbr < 1:
+            score += 1
+        elif pbr > 5:
+            score -= 1
+
+    # 배당수익률 (원본은 0~1 비율, 여기선 이미 % 변환 전 원본)
+    if dividend_yield is not None:
+        if dividend_yield > 0.03:
+            score += 1
+        elif dividend_yield > 0.02:
+            score += 0.5
+
+    if score >= 3:
+        signals['recommendation'] = 'strong_buy'
+    elif score >= 1:
+        signals['recommendation'] = 'buy'
+    elif score <= -3:
+        signals['recommendation'] = 'strong_sell'
+    elif score <= -1:
+        signals['recommendation'] = 'sell'
 
     return signals
 
@@ -128,6 +199,18 @@ def analyze_stock(ticker, period="1y"):
         info = stock.info or {}
         currency = info.get('currency', 'KRW' if '.K' in ticker else 'USD')
 
+        # 장기 지표
+        per = info.get('trailingPE') or info.get('forwardPE')
+        pbr = info.get('priceToBook')
+        dividend_yield = info.get('dividendYield')
+        # yfinance 한국 주식 비정상 값 필터링
+        if dividend_yield and dividend_yield > 0.20:
+            dividend_yield = None
+        if per and (per < 0 or per > 1000):
+            per = None
+
+        long_term = get_long_term_signals(last, per, pbr, dividend_yield)
+
         return {
             "ticker": ticker,
             "currency": currency,
@@ -145,6 +228,10 @@ def analyze_stock(ticker, period="1y"):
             "bb_upper": round(float(last['BBU']), 2) if pd.notnull(last.get('BBU')) else None,
             "bb_lower": round(float(last['BBL']), 2) if pd.notnull(last.get('BBL')) else None,
             "signals": signals,
+            "per": round(float(per), 2) if per else None,
+            "pbr": round(float(pbr), 2) if pbr else None,
+            "dividend_yield": round(float(dividend_yield) * 100, 2) if dividend_yield else None,
+            "long_term": long_term,
         }
     except Exception as e:
         print(f"[ERROR] {ticker}: {e}", file=sys.stderr)
