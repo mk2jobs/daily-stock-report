@@ -2,8 +2,8 @@ name: Daily Stock Report
 
 on:
   schedule:
-    # KST 08:00 = UTC 23:00 (전날)
-    - cron: '0 23 * * 0-4'  # 일~목 UTC 23:00 = 월~금 KST 08:00
+    - cron: '0 23 * * 0-4'  # 일~목 UTC 23:00 = 월~금 KST 08:00 (장시작 전)
+    - cron: '30 5 * * 1-5'  # 월~금 UTC 05:30 = 월~금 KST 14:30 (장마감 1시간 전)
   workflow_dispatch:  # 수동 실행 가능
 
 jobs:
