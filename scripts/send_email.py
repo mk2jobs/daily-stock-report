@@ -28,8 +28,8 @@ def send_report(html_content, to_emails, gmail_user, gmail_app_password):
 
 if __name__ == "__main__":
     html = sys.stdin.read()
-    to_emails = os.environ.get('REPORT_EMAIL', 'jisobkim@gmail.com')
-    gmail_user = os.environ.get('GMAIL_USER', 'jisobkim@gmail.com')
+    to_emails = os.environ['REPORT_EMAIL']
+    gmail_user = os.environ['GMAIL_USER']
     gmail_app_password = os.environ['GMAIL_APP_PASSWORD']
 
     send_report(html, to_emails, gmail_user, gmail_app_password)
