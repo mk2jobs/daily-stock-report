@@ -53,7 +53,7 @@
     {"name": "KODEX 200", "ticker": "069500.KS", "market": "KRX"},
     {"name": "GDXU", "ticker": "GDXU", "market": "US"},
     {"name": "TQQQ", "ticker": "TQQQ", "market": "US"},
-    {"name": "SNXX", "ticker": "SNXX", "market": "US"},
+    {"name": "TRADR 샌디스크 데일리 2배", "ticker": "SNXX", "market": "US"},
     {"name": "SQQQ", "ticker": "SQQQ", "market": "US"},
     {"name": "삼양식품", "ticker": "003230.KS", "market": "KRX"},
     {"name": "LG화학", "ticker": "051910.KS", "market": "KRX"}
