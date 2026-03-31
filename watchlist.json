@@ -45,6 +45,7 @@
     {"name": "알파벳 C", "ticker": "GOOG", "market": "US"},
     {"name": "펩시코", "ticker": "PEP", "market": "US"},
     {"name": "AMD", "ticker": "AMD", "market": "US"},
-    {"name": "펄어비스", "ticker": "263750.KQ", "market": "KRX"}
+    {"name": "펄어비스", "ticker": "263750.KQ", "market": "KRX"},
+    {"name": "테슬라", "ticker": "TSLA", "market": "US"}
   ]
 }
