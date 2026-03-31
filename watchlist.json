@@ -46,6 +46,16 @@
     {"name": "펩시코", "ticker": "PEP", "market": "US"},
     {"name": "AMD", "ticker": "AMD", "market": "US"},
     {"name": "펄어비스", "ticker": "263750.KQ", "market": "KRX"},
-    {"name": "테슬라", "ticker": "TSLA", "market": "US"}
+    {"name": "테슬라", "ticker": "TSLA", "market": "US"},
+    {"name": "KODEX 인버스", "ticker": "114800.KS", "market": "KRX"},
+    {"name": "KODEX 200선물인버스2X", "ticker": "252670.KS", "market": "KRX"},
+    {"name": "SOXS", "ticker": "SOXS", "market": "US"},
+    {"name": "KODEX 200", "ticker": "069500.KS", "market": "KRX"},
+    {"name": "GDXU", "ticker": "GDXU", "market": "US"},
+    {"name": "TQQQ", "ticker": "TQQQ", "market": "US"},
+    {"name": "SNXX", "ticker": "SNXX", "market": "US"},
+    {"name": "SQQQ", "ticker": "SQQQ", "market": "US"},
+    {"name": "삼양식품", "ticker": "003230.KS", "market": "KRX"},
+    {"name": "LG화학", "ticker": "051910.KS", "market": "KRX"}
   ]
 }
