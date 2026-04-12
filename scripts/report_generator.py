@@ -9,6 +9,7 @@ from analyzer import analyze_watchlist
 from gem_scanner import scan_gems
 from market_overview import get_market_indices, get_exchange_rates, get_vix, get_sector_performance
 from extras import check_52week_alerts, get_weekly_performance, get_earnings_calendar
+from sort_utils import sort_by_market_and_cap, fetch_market_caps
 
 
 SIGNAL_KR = {
@@ -75,6 +76,11 @@ def generate_html(watchlist_path):
     # 2. 관심종목 분석
     print("=== Watchlist Analysis ===", file=sys.stderr)
     results = analyze_watchlist(watchlist_path)
+
+    # 시총 기반 정렬 (KRX 먼저, 각 그룹 내 시총 내림차순)
+    print("=== Sorting by Market Cap ===", file=sys.stderr)
+    ticker_info_cache = fetch_market_caps(results)
+    results = sort_by_market_and_cap(results, ticker_info_cache)
 
     krx_stocks = [r for r in results if r['market'] == 'KRX']
     us_stocks = [r for r in results if r['market'] == 'US']
