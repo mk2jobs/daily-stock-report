@@ -9,7 +9,7 @@ on:
 jobs:
   report:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -21,8 +21,14 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
 
+      - name: Install PyTorch (CPU only)
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Clone Kronos model code
+        run: git clone --depth 1 https://github.com/shiyu-coder/Kronos.git libs/kronos-repo
 
       - name: Generate and send report
         env:
