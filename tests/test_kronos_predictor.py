@@ -81,6 +81,25 @@ class TestFormatYfinanceToKronos:
             f"y_timestamp 첫 날짜({y_ts.iloc[0]})가 x 마지막 날짜({x_ts.iloc[-1]}) 이후가 아님"
         )
 
+    def test_format_tz_aware_index(self):
+        """tz-aware DatetimeIndex (America/New_York) → tz-naive 변환 검증."""
+        from libs.kronos_predictor import KronosPredictor
+
+        predictor = KronosPredictor.__new__(KronosPredictor)
+        predictor._available = False
+
+        df = _make_yfinance_df(n_rows=100)
+        # yfinance US 종목처럼 tz 부여
+        df.index = df.index.tz_localize("America/New_York")
+
+        x_df, x_ts, y_ts = predictor._prepare_input(df, pred_len=5)
+
+        # x_timestamp에 tz가 없어야 함
+        assert x_ts.dt.tz is None, f"x_timestamp에 tz가 남아있음: {x_ts.dt.tz}"
+        assert y_ts.dt.tz is None, f"y_timestamp에 tz가 남아있음: {y_ts.dt.tz}"
+        assert len(x_ts) == 100
+        assert len(y_ts) == 5
+
 
 # ---------------------------------------------------------------------------
 # Test 2: _compute_statistics — 샘플 경로로 통계 계산
@@ -96,6 +115,16 @@ class TestComputeStatistics:
             [100.0, 98.0, 100.0, 99.0, 101.0],     # 약보합
             [100.0, 103.0, 102.0, 104.0, 106.0],   # 강한 상승
         ]
+
+    def test_compute_statistics_empty_samples(self):
+        """빈 samples 리스트 → 빈 딕셔너리 반환."""
+        from libs.kronos_predictor import KronosPredictor
+
+        predictor = KronosPredictor.__new__(KronosPredictor)
+        predictor._available = False
+
+        result = predictor._compute_statistics([], current_price=100.0, horizons=[1, 5])
+        assert result == {}, f"빈 samples에서 빈 dict 기대, 실제: {result}"
 
     def test_compute_statistics_horizons(self):
         """horizons [1, 5]에 대한 통계 키가 모두 존재하는지 검증."""
@@ -223,50 +252,89 @@ class TestPredictBatchTimeout:
         )
         assert set(results.keys()) == {"AAPL", "MSFT", "GOOGL"}
 
-    def test_predict_batch_timeout_skips_remaining(self):
-        """타임아웃 시 미처리 종목이 None으로 결과에 포함되는지 검증."""
+    def test_predict_batch_ignores_fallback_not_in_tickers_data(self):
+        """fallback_tickers에 있지만 tickers_data에 없는 종목은 결과에 포함되지 않아야 함."""
         from libs.kronos_predictor import KronosPredictor
 
         predictor = KronosPredictor.__new__(KronosPredictor)
         predictor._available = True
 
-        process_order: list[str] = []
+        dummy_stats = {
+            1: {"median": 101.0, "p10": 99.0, "p90": 103.0, "direction_prob": 0.6, "volatility": 0.02},
+        }
+        predictor.predict = MagicMock(return_value=dummy_stats)
 
-        def slow_predict(df, horizons, n_samples):
-            process_order.append(df.attrs["_ticker"])
-            time.sleep(0.5)  # 각 종목 0.5초 소요
-            return {
-                1: {"median": 101.0, "p10": 99.0, "p90": 103.0, "direction_prob": 0.6, "volatility": 0.02},
-            }
+        tickers_data = {
+            "AAPL": _make_yfinance_df(100),
+            "MSFT": _make_yfinance_df(100),
+        }
+        # TSLA는 tickers_data에 없음
+        fallback_tickers = ["TSLA", "MSFT"]
 
-        predictor.predict = MagicMock(side_effect=slow_predict)
+        results = predictor.predict_batch(
+            tickers_data=tickers_data,
+            horizons=[1],
+            n_samples=1,
+            timeout_seconds=600,
+            fallback_tickers=fallback_tickers,
+        )
 
-        # 6개 종목: timeout=1초, TIMEOUT_RATIO=0.70 → deadline=0.7초
-        # 0.5초/종목이므로 1~2개만 처리 가능
+        # tickers_data에 있는 종목만 결과에 포함
+        assert set(results.keys()) == {"AAPL", "MSFT"}, (
+            f"tickers_data에 없는 TSLA가 포함됨: {set(results.keys())}"
+        )
+
+    def test_predict_batch_timeout_skips_remaining(self):
+        """타임아웃 시 미처리 종목이 None으로 결과에 포함되는지 검증.
+
+        time.monotonic을 mock하여 결정론적으로 테스트.
+        - 1번째 호출(시작): 0.0
+        - 2번째 호출(T1 전 체크): 0.0 → 통과
+        - 3번째 호출(T2 전 체크): 0.5 → 통과 (deadline=0.7)
+        - 4번째 호출(T3 전 체크): 1.0 → 초과 → T3~T6 스킵
+        """
+        from libs.kronos_predictor import KronosPredictor
+
+        predictor = KronosPredictor.__new__(KronosPredictor)
+        predictor._available = True
+
+        dummy_stats = {
+            1: {"median": 101.0, "p10": 99.0, "p90": 103.0, "direction_prob": 0.6, "volatility": 0.02},
+        }
+        predictor.predict = MagicMock(return_value=dummy_stats)
+
         dfs = {}
         for ticker in ["T1", "T2", "T3", "T4", "T5", "T6"]:
             df = _make_yfinance_df(100)
             df.attrs["_ticker"] = ticker
             dfs[ticker] = df
 
-        results = predictor.predict_batch(
-            tickers_data=dfs,
-            horizons=[1],
-            n_samples=1,
-            timeout_seconds=1.0,
-            fallback_tickers=["T1"],
-        )
+        # monotonic 반환값: 시작(0.0), T1 체크(0.0), T2 체크(0.5), T3 체크(1.0)
+        # deadline = 0.0 + 1.0 * 0.70 = 0.70
+        # T1: 0.0 < 0.70 → 처리, T2: 0.5 < 0.70 → 처리, T3: 1.0 > 0.70 → 중단
+        mock_times = iter([0.0, 0.0, 0.5, 1.0])
+
+        with patch("libs.kronos_predictor.time.monotonic", side_effect=mock_times):
+            results = predictor.predict_batch(
+                tickers_data=dfs,
+                horizons=[1],
+                n_samples=1,
+                timeout_seconds=1.0,
+                fallback_tickers=["T1"],
+            )
 
         # 모든 종목이 결과에 포함되어야 함 (스킵된 종목도 None으로)
         assert set(results.keys()) == {"T1", "T2", "T3", "T4", "T5", "T6"}, (
             f"결과 키 누락: {set(dfs.keys()) - set(results.keys())}"
         )
 
-        # 일부 종목은 None이어야 함 (타임아웃으로 스킵)
-        none_count = sum(1 for v in results.values() if v is None)
-        processed_count = sum(1 for v in results.values() if v is not None)
-        assert none_count > 0, "타임아웃에 의해 스킵된 종목이 없음 — timeout이 작동하지 않음"
-        assert processed_count > 0, "처리된 종목이 없음 — fallback 종목도 처리 안됨"
+        # T1, T2만 처리됨, T3~T6은 None
+        assert results["T1"] is not None, "T1이 처리되지 않음"
+        assert results["T2"] is not None, "T2가 처리되지 않음"
+        for skipped in ["T3", "T4", "T5", "T6"]:
+            assert results[skipped] is None, (
+                f"{skipped}이 타임아웃으로 스킵되지 않음: {results[skipped]}"
+            )
 
 
 # ---------------------------------------------------------------------------

@@ -126,6 +126,10 @@ class KronosPredictor:
                 )
                 close_samples.append(list(pred_df["close"].values))
 
+            if not close_samples:
+                logger.warning("Monte Carlo 샘플 수집 실패: 빈 리스트. None 반환.")
+                return None
+
             return self._compute_statistics(close_samples, current_price, horizons)
 
         except Exception as exc:  # noqa: BLE001
@@ -160,9 +164,10 @@ class KronosPredictor:
         results: dict[str, Optional[dict[int, dict[str, float]]]] = {}
         deadline = time.monotonic() + timeout_seconds * self.TIMEOUT_RATIO
 
-        # fallback 우선 → 나머지
-        fallback = list(fallback_tickers) if fallback_tickers else []
-        rest = [t for t in tickers_data if t not in fallback]
+        # fallback 우선 → 나머지 (tickers_data에 있는 종목만 포함)
+        fallback_set = set(fallback_tickers) if fallback_tickers else set()
+        fallback = [t for t in tickers_data if t in fallback_set]
+        rest = [t for t in tickers_data if t not in fallback_set]
         ordered = fallback + rest
 
         for ticker in ordered:
@@ -212,6 +217,9 @@ class KronosPredictor:
             - x_timestamp: 입력 날짜 pd.Series[Timestamp]
             - y_timestamp: 미래 영업일 pd.Series[Timestamp] (pred_len개)
         """
+        # tz-aware DatetimeIndex 처리 (yfinance US 종목은 America/New_York tz 포함)
+        idx = df.index.tz_localize(None) if hasattr(df.index, "tz") and df.index.tz else df.index
+
         # 컬럼명 소문자 변환
         col_map = {
             "Open": "open",
@@ -222,11 +230,11 @@ class KronosPredictor:
         }
         x_df = df.rename(columns=col_map)[["open", "high", "low", "close", "volume"]].copy()
 
-        # x_timestamp: DatetimeIndex → pd.Series
-        x_ts = pd.Series(df.index, name="timestamp")
+        # x_timestamp: DatetimeIndex → pd.Series (tz 제거된 버전)
+        x_ts = pd.Series(idx, name="timestamp")
 
         # y_timestamp: 마지막 날짜 이후 pred_len개 영업일 생성
-        last_date: pd.Timestamp = pd.Timestamp(df.index[-1])
+        last_date: pd.Timestamp = pd.Timestamp(idx[-1])
         future_dates = pd.bdate_range(start=last_date + pd.Timedelta(days=1), periods=pred_len)
         y_ts = pd.Series(future_dates, name="timestamp")
 
@@ -248,6 +256,9 @@ class KronosPredictor:
         Returns:
             {horizon: {median, p10, p90, direction_prob, volatility}}
         """
+        if not samples:
+            return {}
+
         arr = np.array(samples, dtype=np.float64)  # shape: (n_samples, pred_len)
         stats: dict[int, dict[str, float]] = {}
 
