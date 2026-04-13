@@ -94,6 +94,30 @@ def _volatility_label(vol: float) -> str:
 # HTML 빌더
 # ---------------------------------------------------------------------------
 
+def _prob_styled(prob: float) -> str:
+    """상승확률을 색상이 적용된 HTML로 반환.
+
+    80%+ 진한 빨강, 60%+ 빨강, 40~60% 회색, 40%- 파랑, 20%- 진한 파랑.
+    """
+    pct = prob * 100
+    if pct >= 80:
+        color = "#B91C1C"
+        weight = "700"
+    elif pct >= 60:
+        color = "#DC2626"
+        weight = "600"
+    elif pct <= 20:
+        color = "#1D4ED8"
+        weight = "700"
+    elif pct <= 40:
+        color = "#2563EB"
+        weight = "600"
+    else:
+        color = "#9B8E7E"
+        weight = "400"
+    return f'<span style="color:{color};font-weight:{weight}">{pct:.0f}%</span>'
+
+
 def build_forecast_html(
     forecasts: dict[str, Optional[dict[int, dict[str, float]]]],
     stocks: list[dict],
@@ -165,7 +189,7 @@ def build_forecast_html(
         else:
             h1 = result[1]
             direction = _direction_icon(h1["direction_prob"])
-            prob_pct = f'{h1["direction_prob"] * 100:.0f}%'
+            prob_html = _prob_styled(h1["direction_prob"])
             price_range = _format_range(h1["p10"], h1["p90"], currency)
             table_1d += (
                 f'<tr style="{row_bg}">'
@@ -174,7 +198,7 @@ def build_forecast_html(
                 f'<td style="{td_style}">{_format_price(current_price, currency)}</td>'
                 f'<td style="{td_style}">{price_range}</td>'
                 f'<td style="{td_style}text-align:center">{direction}</td>'
-                f'<td style="{td_style}">{prob_pct}</td>'
+                f'<td style="{td_style}">{prob_html}</td>'
                 f'</tr>'
             )
 
