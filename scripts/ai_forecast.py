@@ -143,6 +143,20 @@ def build_forecast_html(
 
     skip_count = sum(1 for s in display_stocks if forecasts.get(s["ticker"]) is None)
 
+    # 1일+5일 모두 상승 확률 ≥60%인 종목 식별
+    dual_bullish: set[str] = set()
+    for s in display_stocks:
+        r = forecasts.get(s["ticker"])
+        if r and 1 in r and 5 in r:
+            if r[1]["direction_prob"] >= 0.60 and r[5]["direction_prob"] >= 0.60:
+                dual_bullish.add(s["ticker"])
+
+    badge_html = (
+        '<span style="display:inline-block;background:#D4A853;color:#FDFBF8;'
+        'font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;'
+        'margin-left:5px;vertical-align:middle;letter-spacing:0.3px">HOT</span>'
+    )
+
     # 공통 테이블 스타일 (이메일 클라이언트 호환 인라인 CSS)
     table_style = (
         "width:100%;border-collapse:collapse;font-size:13px;"
@@ -176,6 +190,7 @@ def build_forecast_html(
         current_price = s.get("price", 0)
         row_bg = "background:#FDFBF8;" if i % 2 == 0 else ""
         result = forecasts.get(ticker)
+        badge = badge_html if ticker in dual_bullish else ""
 
         if result is None or 1 not in result:
             table_1d += (
@@ -193,7 +208,7 @@ def build_forecast_html(
             price_range = _format_range(h1["p10"], h1["p90"], currency)
             table_1d += (
                 f'<tr style="{row_bg}">'
-                f'<td style="{td_style}font-weight:600">{s["name"]}<br>'
+                f'<td style="{td_style}font-weight:600">{s["name"]}{badge}<br>'
                 f'<span style="color:#9B8E7E;font-size:10px">{ticker}</span></td>'
                 f'<td style="{td_style}">{_format_price(current_price, currency)}</td>'
                 f'<td style="{td_style}">{price_range}</td>'
@@ -222,6 +237,7 @@ def build_forecast_html(
         current_price = s.get("price", 0)
         row_bg = "background:#FDFBF8;" if i % 2 == 0 else ""
         result = forecasts.get(ticker)
+        badge = badge_html if ticker in dual_bullish else ""
 
         if result is None or 5 not in result:
             table_5d += (
@@ -239,7 +255,7 @@ def build_forecast_html(
             price_range = _format_range(h5["p10"], h5["p90"], currency)
             table_5d += (
                 f'<tr style="{row_bg}">'
-                f'<td style="{td_style}font-weight:600">{s["name"]}<br>'
+                f'<td style="{td_style}font-weight:600">{s["name"]}{badge}<br>'
                 f'<span style="color:#9B8E7E;font-size:10px">{ticker}</span></td>'
                 f'<td style="{td_style}">{_format_price(current_price, currency)}</td>'
                 f'<td style="{td_style}">{price_range}</td>'
