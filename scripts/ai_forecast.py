@@ -301,13 +301,18 @@ def generate_ai_forecast_section(
         logger.warning("yfinance import 실패, AI 예측 섹션 생략.")
         return ""
 
+    # FALLBACK_TICKERS에 해당하는 종목만 예측 대상으로 제한
+    fallback_set = set(FALLBACK_TICKERS)
+    target_stocks = [s for s in sorted_watchlist if s.get("ticker") in fallback_set]
+
     tickers_data: dict = {}
-    for stock in sorted_watchlist:
+    for stock in target_stocks:
         ticker = stock.get("ticker")
         if not ticker:
             continue
         try:
-            df = yf.download(ticker, period="90d", progress=False, auto_adjust=True)
+            t = yf.Ticker(ticker)
+            df = t.history(period="90d", auto_adjust=True)
             if df is not None and len(df) >= 60:
                 tickers_data[ticker] = df
             else:
@@ -329,4 +334,4 @@ def generate_ai_forecast_section(
         fallback_tickers=set(FALLBACK_TICKERS),
     )
 
-    return build_forecast_html(forecasts, sorted_watchlist)
+    return build_forecast_html(forecasts, target_stocks)

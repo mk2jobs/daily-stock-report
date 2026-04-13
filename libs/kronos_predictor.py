@@ -108,7 +108,8 @@ class KronosPredictor:
         try:
             pred_len = self.DEFAULT_PRED_LEN
             x_df, x_ts, y_ts = self._prepare_input(df, pred_len=pred_len)
-            current_price = float(df["Close"].iloc[-1])
+            last_close = df["Close"].iloc[-1]
+            current_price = float(last_close.iloc[0]) if hasattr(last_close, "iloc") else float(last_close)
 
             # Monte Carlo 샘플링: sample_count=1로 N번 반복
             close_samples: list[list[float]] = []
@@ -219,6 +220,10 @@ class KronosPredictor:
         """
         # tz-aware DatetimeIndex 처리 (yfinance US 종목은 America/New_York tz 포함)
         idx = df.index.tz_localize(None) if hasattr(df.index, "tz") and df.index.tz else df.index
+
+        # MultiIndex 컬럼 평탄화 (yfinance 최신 버전 호환)
+        if isinstance(df.columns, pd.MultiIndex):
+            df = df.droplevel(level=1, axis=1)
 
         # 컬럼명 소문자 변환
         col_map = {
