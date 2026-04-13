@@ -146,6 +146,17 @@ def generate_html(watchlist_path):
   .card-reason {{ font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; color: #B8860B; font-size: 12px; margin-top: 6px; font-weight: 500; }}
   .vix-badge {{ display: inline-block; padding: 2px 10px; border-radius: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; font-size: 10px; font-weight: 600; color: white; letter-spacing: 0.5px; vertical-align: middle; }}
   .sector-bar {{ height: 4px; border-radius: 2px; margin-top: 6px; }}
+  .ai-table {{ width: 100%; border-collapse: collapse; font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; }}
+  .ai-table th {{ background: #2C2620; color: #E8E2DB; padding: 9px 8px; text-align: left; font-size: 11px; font-weight: 500; letter-spacing: 0.5px; }}
+  .ai-table td {{ padding: 9px 8px; border-bottom: 1px solid #E8E2DB; color: #3D3529; font-size: 13px; }}
+  .ai-name {{ font-weight: 600; }}
+  .ai-ticker {{ color: #9B8E7E; font-size: 10px; }}
+  .ai-skip {{ color: #9B8E7E; font-size: 12px; }}
+  .ai-dir {{ text-align: center; }}
+  .ai-row-alt {{ background: #FDFBF8; }}
+  .ai-hot {{ display: inline-block; background: #D4A853; color: #FDFBF8; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; margin-left: 5px; vertical-align: middle; letter-spacing: 0.3px; }}
+  .ai-wrap {{ border: 1px solid #E8E2DB; border-radius: 10px; padding: 20px 24px; margin: 0; }}
+  .ai-sub {{ font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #9B8E7E; margin: 0 0 10px 0; font-weight: 600; }}
   .footer {{ padding: 40px 0 20px; text-align: center; }}
   .footer-line {{ width: 40px; height: 1px; background: #D6CFC7; margin: 0 auto 20px; }}
   .footer p {{ font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; color: #B8AFA3; font-size: 11px; line-height: 1.8; margin: 0; }}

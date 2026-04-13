@@ -151,54 +151,35 @@ def build_forecast_html(
             if r[1]["direction_prob"] >= 0.60 and r[5]["direction_prob"] >= 0.60:
                 dual_bullish.add(s["ticker"])
 
-    badge_html = (
-        '<span style="display:inline-block;background:#D4A853;color:#FDFBF8;'
-        'font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;'
-        'margin-left:5px;vertical-align:middle;letter-spacing:0.3px">HOT</span>'
-    )
-
-    # 공통 테이블 스타일 (이메일 클라이언트 호환 인라인 CSS)
-    table_style = (
-        "width:100%;border-collapse:collapse;font-size:13px;"
-        "font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;"
-    )
-    th_style = (
-        "background:#2C2620;color:#E8E2DB;padding:9px 8px;text-align:left;"
-        "font-size:11px;font-weight:500;letter-spacing:0.5px;"
-    )
-    td_style = (
-        "padding:9px 8px;border-bottom:1px solid #E8E2DB;"
-        "color:#3D3529;font-size:13px;"
-    )
-    skip_style = "color:#9B8E7E;font-size:12px;"
+    badge_html = '<span class="ai-hot">HOT</span>'
 
     # ------------------------------------------------------------------ 1일 예측
-    table_1d = f'<table class="ai-table" style="{table_style}">'
+    table_1d = '<table class="ai-table">'
     table_1d += (
-        f'<tr>'
-        f'<th style="{th_style}border-radius:6px 0 0 0">종목</th>'
-        f'<th style="{th_style}">현재가</th>'
-        f'<th style="{th_style}">예상 범위</th>'
-        f'<th style="{th_style}">방향</th>'
-        f'<th style="{th_style}border-radius:0 6px 0 0">상승확률</th>'
-        f'</tr>'
+        '<tr>'
+        '<th style="border-radius:6px 0 0 0">종목</th>'
+        '<th>현재가</th>'
+        '<th>예상 범위</th>'
+        '<th>방향</th>'
+        '<th style="border-radius:0 6px 0 0">상승확률</th>'
+        '</tr>'
     )
 
     for i, s in enumerate(display_stocks):
         ticker = s["ticker"]
         currency = s.get("currency", "USD")
         current_price = s.get("price", 0)
-        row_bg = "background:#FDFBF8;" if i % 2 == 0 else ""
+        row_cls = ' class="ai-row-alt"' if i % 2 == 0 else ""
         result = forecasts.get(ticker)
         badge = badge_html if ticker in dual_bullish else ""
 
         if result is None or 1 not in result:
             table_1d += (
-                f'<tr style="{row_bg}">'
-                f'<td style="{td_style}font-weight:600">{s["name"]}<br>'
-                f'<span style="color:#9B8E7E;font-size:10px">{ticker}</span></td>'
-                f'<td style="{td_style}">{_format_price(current_price, currency)}</td>'
-                f'<td style="{td_style}{skip_style}" colspan="3">⏱ 스킵</td>'
+                f'<tr{row_cls}>'
+                f'<td class="ai-name">{s["name"]}<br>'
+                f'<span class="ai-ticker">{ticker}</span></td>'
+                f'<td>{_format_price(current_price, currency)}</td>'
+                f'<td class="ai-skip" colspan="3">⏱ 스킵</td>'
                 f'</tr>'
             )
         else:
@@ -207,45 +188,45 @@ def build_forecast_html(
             prob_html = _prob_styled(h1["direction_prob"])
             price_range = _format_range(h1["p10"], h1["p90"], currency)
             table_1d += (
-                f'<tr style="{row_bg}">'
-                f'<td style="{td_style}font-weight:600">{s["name"]}{badge}<br>'
-                f'<span style="color:#9B8E7E;font-size:10px">{ticker}</span></td>'
-                f'<td style="{td_style}">{_format_price(current_price, currency)}</td>'
-                f'<td style="{td_style}">{price_range}</td>'
-                f'<td style="{td_style}text-align:center">{direction}</td>'
-                f'<td style="{td_style}">{prob_html}</td>'
+                f'<tr{row_cls}>'
+                f'<td class="ai-name">{s["name"]}{badge}<br>'
+                f'<span class="ai-ticker">{ticker}</span></td>'
+                f'<td>{_format_price(current_price, currency)}</td>'
+                f'<td>{price_range}</td>'
+                f'<td class="ai-dir">{direction}</td>'
+                f'<td>{prob_html}</td>'
                 f'</tr>'
             )
 
     table_1d += "</table>"
 
     # ------------------------------------------------------------------ 5일 예측
-    table_5d = f'<table class="ai-table" style="{table_style}margin-top:16px">'
+    table_5d = '<table class="ai-table" style="margin-top:16px">'
     table_5d += (
-        f'<tr>'
-        f'<th style="{th_style}border-radius:6px 0 0 0">종목</th>'
-        f'<th style="{th_style}">현재가</th>'
-        f'<th style="{th_style}">예상 범위</th>'
-        f'<th style="{th_style}">방향</th>'
-        f'<th style="{th_style}border-radius:0 6px 0 0">변동성</th>'
-        f'</tr>'
+        '<tr>'
+        '<th style="border-radius:6px 0 0 0">종목</th>'
+        '<th>현재가</th>'
+        '<th>예상 범위</th>'
+        '<th>방향</th>'
+        '<th style="border-radius:0 6px 0 0">변동성</th>'
+        '</tr>'
     )
 
     for i, s in enumerate(display_stocks):
         ticker = s["ticker"]
         currency = s.get("currency", "USD")
         current_price = s.get("price", 0)
-        row_bg = "background:#FDFBF8;" if i % 2 == 0 else ""
+        row_cls = ' class="ai-row-alt"' if i % 2 == 0 else ""
         result = forecasts.get(ticker)
         badge = badge_html if ticker in dual_bullish else ""
 
         if result is None or 5 not in result:
             table_5d += (
-                f'<tr style="{row_bg}">'
-                f'<td style="{td_style}font-weight:600">{s["name"]}<br>'
-                f'<span style="color:#9B8E7E;font-size:10px">{ticker}</span></td>'
-                f'<td style="{td_style}">{_format_price(current_price, currency)}</td>'
-                f'<td style="{td_style}{skip_style}" colspan="3">⏱ 스킵</td>'
+                f'<tr{row_cls}>'
+                f'<td class="ai-name">{s["name"]}<br>'
+                f'<span class="ai-ticker">{ticker}</span></td>'
+                f'<td>{_format_price(current_price, currency)}</td>'
+                f'<td class="ai-skip" colspan="3">⏱ 스킵</td>'
                 f'</tr>'
             )
         else:
@@ -254,13 +235,13 @@ def build_forecast_html(
             vol_label = _volatility_label(h5["volatility"])
             price_range = _format_range(h5["p10"], h5["p90"], currency)
             table_5d += (
-                f'<tr style="{row_bg}">'
-                f'<td style="{td_style}font-weight:600">{s["name"]}{badge}<br>'
-                f'<span style="color:#9B8E7E;font-size:10px">{ticker}</span></td>'
-                f'<td style="{td_style}">{_format_price(current_price, currency)}</td>'
-                f'<td style="{td_style}">{price_range}</td>'
-                f'<td style="{td_style}text-align:center">{direction}</td>'
-                f'<td style="{td_style}">{vol_label}</td>'
+                f'<tr{row_cls}>'
+                f'<td class="ai-name">{s["name"]}{badge}<br>'
+                f'<span class="ai-ticker">{ticker}</span></td>'
+                f'<td>{_format_price(current_price, currency)}</td>'
+                f'<td>{price_range}</td>'
+                f'<td class="ai-dir">{direction}</td>'
+                f'<td>{vol_label}</td>'
                 f'</tr>'
             )
 
@@ -271,28 +252,12 @@ def build_forecast_html(
     if skip_count > 0:
         footer_note += f" ({skip_count}개 종목 타임아웃으로 스킵됨)"
 
-    footer_style = (
-        "font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;"
-        "font-size:11px;color:#9B8E7E;margin-top:12px;"
-    )
-
-    # ------------------------------------------------------------------ 섹션 조립
-    section_style = (
-        "border:1px solid #E8E2DB;border-radius:10px;"
-        "padding:20px 24px;margin:0;"
-    )
-    sub_title_style = (
-        "font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;"
-        "font-size:11px;letter-spacing:1px;text-transform:uppercase;"
-        "color:#9B8E7E;margin:0 0 10px 0;font-weight:600;"
-    )
-
-    html = f'<div style="{section_style}">'
-    html += f'<p style="{sub_title_style}">1일 예측</p>'
+    html = '<div class="ai-wrap">'
+    html += '<p class="ai-sub">1일 예측</p>'
     html += table_1d
-    html += f'<p style="{sub_title_style}margin-top:20px;">5일(주간) 예측</p>'
+    html += '<p class="ai-sub" style="margin-top:20px">5일(주간) 예측</p>'
     html += table_5d
-    html += f'<p style="{footer_style}">{footer_note}</p>'
+    html += f'<p style="font-size:11px;color:#9B8E7E;margin-top:12px">{footer_note}</p>'
     html += "</div>"
 
     return html
